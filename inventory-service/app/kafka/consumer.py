@@ -5,17 +5,30 @@ import os
 from .. import models
 
 KAFKA_BROKER = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+KAFKA_USERNAME = os.getenv("KAFKA_USERNAME")
+KAFKA_PASSWORD = os.getenv("KAFKA_PASSWORD")
 
 def start_consumer():
-    consumer = KafkaConsumer(
-        "order.created",
-        bootstrap_servers=[KAFKA_BROKER],
-        value_deserializer=lambda m: json.loads(m.decode('utf-8'))
-    )
-    producer = KafkaProducer(
-        bootstrap_servers=[KAFKA_BROKER],
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
-    )
+    kafka_config_consumer = {
+        "bootstrap_servers": [KAFKA_BROKER],
+        "value_deserializer": lambda m: json.loads(m.decode('utf-8'))
+    }
+    kafka_config_producer = {
+        "bootstrap_servers": [KAFKA_BROKER],
+        "value_serializer": lambda v: json.dumps(v).encode('utf-8')
+    }
+
+    if KAFKA_USERNAME and KAFKA_PASSWORD:
+        for config in [kafka_config_consumer, kafka_config_producer]:
+            config.update({
+                "security_protocol": "SASL_SSL",
+                "sasl_mechanism": "SCRAM-SHA-256",
+                "sasl_plain_username": KAFKA_USERNAME,
+                "sasl_plain_password": KAFKA_PASSWORD
+            })
+
+    consumer = KafkaConsumer("order.created", **kafka_config_consumer)
+    producer = KafkaProducer(**kafka_config_producer)
 
     print("Inventory consumer started...")
     for message in consumer:

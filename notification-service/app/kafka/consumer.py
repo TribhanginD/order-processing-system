@@ -3,12 +3,26 @@ import json
 import os
 
 KAFKA_BROKER = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+KAFKA_USERNAME = os.getenv("KAFKA_USERNAME")
+KAFKA_PASSWORD = os.getenv("KAFKA_PASSWORD")
 
 def start_consumer():
+    kafka_config = {
+        "bootstrap_servers": [KAFKA_BROKER],
+        "value_deserializer": lambda m: json.loads(m.decode('utf-8'))
+    }
+
+    if KAFKA_USERNAME and KAFKA_PASSWORD:
+        kafka_config.update({
+            "security_protocol": "SASL_SSL",
+            "sasl_mechanism": "SCRAM-SHA-256",
+            "sasl_plain_username": KAFKA_USERNAME,
+            "sasl_plain_password": KAFKA_PASSWORD
+        })
+
     consumer = KafkaConsumer(
         "payment.succeeded", "payment.failed", "order.dlq",
-        bootstrap_servers=[KAFKA_BROKER],
-        value_deserializer=lambda m: json.loads(m.decode('utf-8'))
+        **kafka_config
     )
 
     print("Notification service started (watching payment events)...")
