@@ -7,6 +7,7 @@ import os
 KAFKA_BROKER = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 KAFKA_USERNAME = os.getenv("KAFKA_USERNAME")
 KAFKA_PASSWORD = os.getenv("KAFKA_PASSWORD")
+KAFKA_CA_CERT = os.getenv("KAFKA_CA_CERT")
 
 def process_payment(order_id):
     # Simulate payment processing failure (10% chance)
@@ -25,6 +26,11 @@ def start_consumer():
     }
 
     if KAFKA_USERNAME and KAFKA_PASSWORD:
+        if KAFKA_CA_CERT:
+            ca_path = "/tmp/ca.pem"
+            with open(ca_path, "w") as f:
+                f.write(KAFKA_CA_CERT)
+
         for config in [kafka_config_consumer, kafka_config_producer]:
             config.update({
                 "security_protocol": "SASL_SSL",
@@ -32,6 +38,8 @@ def start_consumer():
                 "sasl_plain_username": KAFKA_USERNAME,
                 "sasl_plain_password": KAFKA_PASSWORD
             })
+            if KAFKA_CA_CERT:
+                config["ssl_cafile"] = "/tmp/ca.pem"
 
     consumer = KafkaConsumer("inventory.reserved", **kafka_config_consumer)
     producer = KafkaProducer(**kafka_config_producer)
