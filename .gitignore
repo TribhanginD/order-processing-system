@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+.env
+venv/
+
+# Docker
+/db-data-orders/
+/db-data-inventory/
+
+# Misc
+.DS_Store

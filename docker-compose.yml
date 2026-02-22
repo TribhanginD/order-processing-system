@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: bitnami/kafka:latest
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    depends_on:
+      - zookeeper
+
+  db-orders:
+    image: postgres:15-alpine
+    environment: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: orders }
+
+  db-inventory:
+    image: postgres:15-alpine
+    environment: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: inventory }
+
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db-orders:5432/orders
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    ports:
+      - "8001:8000"
+    depends_on: [ kafka, db-orders ]
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+    command: python -m app.kafka.consumer
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db-inventory:5432/inventory
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on: [ kafka, db-inventory ]
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+    command: python -m app.kafka.consumer
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on: [ kafka ]
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+    command: python -m app.kafka.consumer
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on: [ kafka ]
