@@ -1,6 +1,20 @@
 # Order Processing System
 Event-driven e-commerce backend demonstration.
 
+
+## Event Flow
+```mermaid
+graph LR
+    U([Client]) -->|REST| OS[Order Service]
+    OS -->|Produce order.created| K{Kafka}
+    K -->|Consume| IS[Inventory Service]
+    IS -->|Produce inventory.reserved| K
+    K -->|Consume| PS[Payment Service]
+    PS -->|Produce payment.succeeded| K
+    PS -->|Produce order.dlq| K
+    K -->|Consume| NS[Notification Service]
+```
+
 ## Overview
 A distributed system consisting of four microservices communicating via Kafka. Implements reliability patterns for high-throughput order processing.
 
