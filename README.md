@@ -1,24 +1,30 @@
 # Order Processing System
-
 Event-driven e-commerce backend demonstration.
 
-## Services
-- **Order Service**: Entry point, emits `order.created`.
-- **Inventory Service**: Consumes `order.created`, uses optimistic locking, emits `inventory.reserved`.
-- **Payment Service**: Consumes `inventory.reserved`, implements exponential backoff/retries, emits `payment.succeeded` or `order.dlq`.
-- **Notification Service**: Consumes all result events and logs notifications.
+## Overview
+A distributed system consisting of four microservices communicating via Kafka. Implements reliability patterns for high-throughput order processing.
+
+## Microservices
+- Order Service: REST API for order creation.
+- Inventory Service: Stock management with optimistic locking.
+- Payment Service: Transaction simulation with exponential backoff and retries.
+- Notification Service: Event-driven log notifications.
 
 ## Reliability Patterns
-- **Idempotency**: UUID-based deduplication in Order DB.
-- **Circuit Breaker**: Simulated gateway protection.
-- **Dead Letter Queue (DLQ)**: Failed payments routed to `order.dlq`.
-- **Optimistic Locking**: Version-based consistency in Inventory.
+- Idempotency: UUID-based deduplication.
+- Dead Letter Queue (DLQ): Failed payments routed for manual review.
+- Optimistic Locking: Version-based consistency in Inventory.
+- Chaos Engineering: Scripts included for simulating service and broker failures.
 
 ## Setup
-```bash
-docker-compose up --build
-```
-Post an order:
-```bash
-curl -X POST "http://localhost:8001/orders?product_id=laptop&quantity=1&idempotency_key=unique-key-1"
-```
+1. Start services:
+   ```bash
+   docker-compose up --build -d
+   ```
+2. Test Order:
+   ```bash
+   curl -X POST "http://localhost:8001/orders?product_id=laptop&quantity=1&idempotency_key=unique-key-1"
+   ```
+3. Load Testing:
+   - Script: `scripts/simulate_failures.sh load`
+   - Locustfile: `load-test/locustfile.py`
