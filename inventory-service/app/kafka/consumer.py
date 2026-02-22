@@ -2,7 +2,7 @@ import json
 import time
 from kafka import KafkaConsumer, KafkaProducer
 import os
-from . import models
+from .. import models
 
 KAFKA_BROKER = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 
